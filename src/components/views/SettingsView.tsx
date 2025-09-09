@@ -16,31 +16,26 @@ import {
   Smartphone, 
   CreditCard,
   Database,
-  Trash2
+  Trash2,
+  Moon,
+  Sun,
+  Languages
 } from 'lucide-react';
 import { usePageBuilder } from '../../hooks/usePageBuilder';
 
 export const SettingsView: React.FC = () => {
-  const { settings, setSettings, media } = usePageBuilder();
+  const { settings, media, updateState, download, svgPlaceholder } = usePageBuilder();
 
   const handleSave = () => {
-    // Save settings logic
     alert('Settings saved!');
   };
 
   const handleExportData = () => {
-    // Export data as JSON
     const data = {
       settings,
       timestamp: new Date().toISOString()
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pagebuilder-settings-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    download(`pagebuilder-settings-${Date.now()}.json`, JSON.stringify(data, null, 2));
   };
 
   const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +46,10 @@ export const SettingsView: React.FC = () => {
         try {
           const data = JSON.parse(e.target?.result as string);
           if (data.settings) {
-            setSettings(data.settings);
+            updateState(prev => ({
+              ...prev,
+              settings: { ...prev.settings, ...data.settings }
+            }));
             alert('Settings imported successfully!');
           }
         } catch (error) {
@@ -62,21 +60,82 @@ export const SettingsView: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    if (confirm('Reset all settings? This action cannot be undone.')) {
-      setSettings({
-        brandName: 'Page Builder',
-        domain: '',
-        workspace: 'default',
-        waNumber: '',
-        waTemplate: 'Halo, saya ingin beli {{product}} ({{qty}}x) total {{total}}.',
-        bankInfo: '',
-        qrisId: '',
-        qrisImg: '',
-        logo: '',
-        favicon: ''
+  const seedDemo = () => {
+    if (!confirm('Isi demo (produk, pesanan, halaman)? Data lama akan tetap ada.')) return;
+    
+    // Add sample products
+    const pics = ['Kemeja Linen', 'Tas Kulit', 'Sepatu Lari', 'Lampu Meja', 'Kopi Arabica', 'Poster Dinding'];
+    const prices = [249000, 399000, 699000, 199000, 99000, 79000];
+    
+    updateState(prev => {
+      const newProducts = pics.map((name, i) => ({
+        id: `product-${Date.now()}-${i}`,
+        name,
+        price: prices[i],
+        sku: `SKU-${100 + i}`,
+        category: i < 3 ? 'Fashion' : 'Home',
+        image: svgPlaceholder(280, 180, name),
+        description: `Deskripsi untuk ${name}`
+      }));
+
+      // Add sample orders
+      const now = Date.now();
+      const newOrders = newProducts.slice(0, 6).map((p, i) => {
+        const qty = 1 + i % 2;
+        return {
+          id: `order-${Date.now()}-${i}`,
+          date: now - i * 86400000 * 5,
+          customer: `Cust ${i + 1}`,
+          product: p.name,
+          qty,
+          total: p.price * qty,
+          method: ['WA', 'Transfer', 'QRIS'][i % 3],
+          status: (i % 3 === 0 ? 'paid' : 'pending') as 'paid' | 'pending'
+        };
       });
+
+      // Add sample customers
+      const newCustomers = ['Andi', 'Bunga', 'Cici', 'Dedi', 'Eka'].map((name, i) => ({
+        id: `customer-${Date.now()}-${i}`,
+        name,
+        phone: `62812${123450 + i}`,
+        email: `${name.toLowerCase()}@mail.com`,
+        note: ''
+      }));
+
+      return {
+        ...prev,
+        products: [...prev.products, ...newProducts],
+        orders: [...prev.orders, ...newOrders],
+        customers: [...prev.customers, ...newCustomers]
+      };
+    });
+
+    alert('Seed demo ditambahkan.');
+  };
+
+  const handleReset = () => {
+    if (confirm('Reset workspace ini? Semua data akan dihapus.')) {
+      const wsKey = `pb-proto-${settings.workspace || 'default'}`;
+      localStorage.removeItem(wsKey);
+      location.reload();
     }
+  };
+
+  const toggleTheme = () => {
+    const newTheme = settings.theme === 'light' ? 'dark' : 'light';
+    updateState(prev => ({
+      ...prev,
+      settings: { ...prev.settings, theme: newTheme }
+    }));
+  };
+
+  const toggleLang = () => {
+    const newLang = settings.lang === 'id' ? 'en' : 'id';
+    updateState(prev => ({
+      ...prev,
+      settings: { ...prev.settings, lang: newLang }
+    }));
   };
 
   return (
@@ -90,6 +149,13 @@ export const SettingsView: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={toggleTheme}>
+              {settings.theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" onClick={toggleLang}>
+              <Languages className="h-4 w-4 mr-2" />
+              {settings.lang === 'id' ? 'EN' : 'ID'}
+            </Button>
             <Button variant="outline" onClick={handleExportData}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -131,7 +197,10 @@ export const SettingsView: React.FC = () => {
                 <Input
                   id="brandName"
                   value={settings.brandName}
-                  onChange={(e) => setSettings(prev => ({ ...prev, brandName: e.target.value }))}
+                  onChange={(e) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, brandName: e.target.value }
+                  }))}
                   placeholder="Your Brand Name"
                 />
               </div>
@@ -141,7 +210,10 @@ export const SettingsView: React.FC = () => {
                 <Input
                   id="domain"
                   value={settings.domain}
-                  onChange={(e) => setSettings(prev => ({ ...prev, domain: e.target.value }))}
+                  onChange={(e) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, domain: e.target.value }
+                  }))}
                   placeholder="yourdomain.com"
                 />
               </div>
@@ -152,7 +224,10 @@ export const SettingsView: React.FC = () => {
               <Input
                 id="workspace"
                 value={settings.workspace}
-                onChange={(e) => setSettings(prev => ({ ...prev, workspace: e.target.value }))}
+                onChange={(e) => updateState(prev => ({
+                  ...prev,
+                  settings: { ...prev.settings, workspace: e.target.value }
+                }))}
                 placeholder="default"
               />
               <p className="text-sm text-muted-foreground mt-1">
@@ -165,7 +240,10 @@ export const SettingsView: React.FC = () => {
                 <Label htmlFor="logo">Logo</Label>
                 <Select 
                   value={settings.logo} 
-                  onValueChange={(value) => setSettings(prev => ({ ...prev, logo: value }))}
+                  onValueChange={(value) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, logo: value }
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select logo" />
@@ -185,7 +263,10 @@ export const SettingsView: React.FC = () => {
                 <Label htmlFor="favicon">Favicon</Label>
                 <Select 
                   value={settings.favicon} 
-                  onValueChange={(value) => setSettings(prev => ({ ...prev, favicon: value }))}
+                  onValueChange={(value) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, favicon: value }
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select favicon" />
@@ -218,7 +299,10 @@ export const SettingsView: React.FC = () => {
               <Input
                 id="waNumber"
                 value={settings.waNumber}
-                onChange={(e) => setSettings(prev => ({ ...prev, waNumber: e.target.value }))}
+                onChange={(e) => updateState(prev => ({
+                  ...prev,
+                  settings: { ...prev.settings, waNumber: e.target.value }
+                }))}
                 placeholder="628123456789"
               />
               <p className="text-sm text-muted-foreground mt-1">
@@ -231,7 +315,10 @@ export const SettingsView: React.FC = () => {
               <Textarea
                 id="waTemplate"
                 value={settings.waTemplate}
-                onChange={(e) => setSettings(prev => ({ ...prev, waTemplate: e.target.value }))}
+                onChange={(e) => updateState(prev => ({
+                  ...prev,
+                  settings: { ...prev.settings, waTemplate: e.target.value }
+                }))}
                 placeholder="Halo, saya ingin beli {{product}} ({{qty}}x) total {{total}}."
                 rows={3}
               />
@@ -258,7 +345,10 @@ export const SettingsView: React.FC = () => {
               <Textarea
                 id="bankInfo"
                 value={settings.bankInfo}
-                onChange={(e) => setSettings(prev => ({ ...prev, bankInfo: e.target.value }))}
+                onChange={(e) => updateState(prev => ({
+                  ...prev,
+                  settings: { ...prev.settings, bankInfo: e.target.value }
+                }))}
                 placeholder="Bank BCA&#10;No. Rek: 1234567890&#10;a/n: Your Name"
                 rows={3}
               />
@@ -272,7 +362,10 @@ export const SettingsView: React.FC = () => {
                 <Input
                   id="qrisId"
                   value={settings.qrisId}
-                  onChange={(e) => setSettings(prev => ({ ...prev, qrisId: e.target.value }))}
+                  onChange={(e) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, qrisId: e.target.value }
+                  }))}
                   placeholder="ID200001234567890"
                 />
               </div>
@@ -281,7 +374,10 @@ export const SettingsView: React.FC = () => {
                 <Label htmlFor="qrisImg">QRIS QR Code Image</Label>
                 <Select 
                   value={settings.qrisImg} 
-                  onValueChange={(value) => setSettings(prev => ({ ...prev, qrisImg: value }))}
+                  onValueChange={(value) => updateState(prev => ({
+                    ...prev,
+                    settings: { ...prev.settings, qrisImg: value }
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select QR image" />
@@ -331,7 +427,7 @@ export const SettingsView: React.FC = () => {
                 onChange={handleImportData}
               />
               
-              <Button variant="outline">
+              <Button variant="outline" onClick={seedDemo}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Seed Demo Data
               </Button>

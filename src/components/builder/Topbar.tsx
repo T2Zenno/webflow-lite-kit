@@ -10,7 +10,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ sidebarOpen, setSidebarOpen }) => {
-  const { pages, currentPageId, switchPage, addPage, settings } = usePageBuilder();
+  const { pages, currentPageId, switchPage, addPage, settings, state, download } = usePageBuilder();
 
   const handleAddPage = () => {
     const name = prompt('Nama halaman baru:');
@@ -19,19 +19,39 @@ export const Topbar: React.FC<TopbarProps> = ({ sidebarOpen, setSidebarOpen }) =
     }
   };
 
+  const buildStandaloneHTML = (title: string) => {
+    const brand = settings.brandName || 'Brand Anda';
+    const currentPage = pages.find(p => p.id === currentPageId);
+    const inner = currentPage?.html || '';
+    const faviconHref = state.media.find(m => m.id === settings.favicon)?.dataUrl || '';
+    const theme = settings.theme || 'dark';
+    const lang = settings.lang || 'id';
+    const wa = settings.waNumber || '';
+    const waTpl = settings.waTemplate || '';
+    const bank = settings.bankInfo || '';
+    const qrisImg = state.media.find(m => m.id === settings.qrisImg)?.dataUrl || '';
+    const qrisId = settings.qrisId || '';
+
+    return `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title || brand}</title>${faviconHref ? `<link rel="icon" href="${faviconHref}">` : ''}<style>body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:${theme === 'light' ? '#f5f7ff' : '#0b1126'};color:${theme === 'light' ? '#0f1220' : '#e8ecff'}} .blk{border-radius:16px;border:1px solid ${theme === 'light' ? '#d8def7' : '#243056'};background:${theme === 'light' ? '#ffffff' : '#12173a'};padding:24px;max-width:980px;margin:14px auto} .btn{display:inline-block;padding:10px 14px;border-radius:12px;background:${theme === 'light' ? '#eef2ff' : '#1e2442'};border:1px solid ${theme === 'light' ? '#d8def7' : '#2a315a'};color:inherit;text-decoration:none} .btn.acc{background:${theme === 'light' ? '#6366f1' : '#6366f1'};border-color:#6d6de5;color:white} input{padding:10px;border-radius:10px;border:1px solid ${theme === 'light' ? '#d8def7' : '#2a315a'};background:${theme === 'light' ? '#fff' : '#0f1329'};color:inherit} .muted{opacity:.8}</style></head><body>${inner}</body></html>`;
+  };
+
   const handlePreview = () => {
-    // Open preview in new window
-    window.open('about:blank', '_blank');
+    const html = buildStandaloneHTML(settings.brandName || 'Landing');
+    const w = window.open();
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
   };
 
   const handleExport = () => {
-    // Export HTML functionality
-    console.log('Export HTML');
+    const html = buildStandaloneHTML(settings.brandName || 'Landing');
+    download('halaman.html', html);
   };
 
   const handlePublish = () => {
-    // Publish functionality
-    console.log('Publish');
+    const html = buildStandaloneHTML(settings.brandName || 'Landing');
+    download('halaman.html', html);
   };
 
   return (
@@ -42,7 +62,6 @@ export const Topbar: React.FC<TopbarProps> = ({ sidebarOpen, setSidebarOpen }) =
           variant="ghost"
           size="sm"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="md:hidden"
         >
           <Menu className="h-4 w-4" />
         </Button>
