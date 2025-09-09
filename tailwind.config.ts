@@ -19,17 +19,29 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+          hover: "hsl(var(--secondary-hover))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -56,6 +68,21 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        
+        // Builder specific colors
+        workspace: {
+          DEFAULT: "hsl(var(--workspace-bg))",
+          border: "hsl(var(--workspace-border))",
+        },
+        inspector: {
+          DEFAULT: "hsl(var(--inspector-bg))",
+          border: "hsl(var(--inspector-border))",
+        },
+        builder: {
+          canvas: "hsl(var(--builder-canvas))",
+          "drop-zone": "hsl(var(--builder-drop-zone))",
+          selected: "hsl(var(--builder-selected))",
         },
       },
       borderRadius: {
